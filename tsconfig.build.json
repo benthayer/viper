@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "moduleResolution": "Node",
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "declarationMap": true,
+    "rootDir": "./src",
+    "types": ["node"]
+  },
+  "include": ["src/**/*"]
+}

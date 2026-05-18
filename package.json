@@ -1,0 +1,74 @@
+{
+  "name": "mongoose-killer",
+  "version": "0.1.0",
+  "description": "In a fight of Mongoose vs. Viper, only 1 in 10 Vipers come out on top. This is the 10th Viper. Viper is a drop-in Mongoose replacement built for speed.",
+  "license": "MIT",
+  "author": "Ben Thayer",
+  "keywords": [
+    "mongodb",
+    "mongoose",
+    "odm",
+    "driver",
+    "schema"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benthayer/viper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/benthayer/viper/issues"
+  },
+  "homepage": "https://github.com/benthayer/viper#readme",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cjs/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/cjs/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "rm -rf dist && yarn build:cjs && yarn build:esm && yarn build:esm:pkgjson",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:esm:pkgjson": "node -e \"require('fs').writeFileSync('dist/esm/package.json', JSON.stringify({type:'module'}) + '\\n')\"",
+    "prepare": "yarn build",
+    "prepublishOnly": "yarn build && yarn test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:real": "MONGOOSE_BACKEND=real vitest run",
+    "test:fake": "MONGOOSE_BACKEND=fake vitest run",
+    "test:both": "MONGOOSE_BACKEND=real vitest run && MONGOOSE_BACKEND=fake vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "mongodb": "^6.0.0"
+  },
+  "dependencies": {
+    "bson": "^6.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "mongodb": "^6.9.0",
+    "mongoose": "^8.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.1.0"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}
