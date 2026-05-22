@@ -6,7 +6,7 @@ import type { CastIdsConflictPolicy } from "./types.js";
 
 type ModelInit = {
   name: string;
-  collection: Collection;
+  collectionName: string;
   db: Db;
   populates: Record<string, { collection: string }>;
   collectionToModelName: Map<string, string>;
@@ -20,7 +20,7 @@ type ModelInit = {
 // Instances are not a thing — call sites never `new Model()`.
 export class Model {
   name: string;
-  collection: Collection;
+  collectionName: string;
   populates: Record<string, { collection: string }>;
   collectionToModelName: Map<string, string>;
   getModelByName: (name: string) => any;
@@ -41,13 +41,23 @@ export class Model {
 
   constructor(init: ModelInit) {
     this.name = init.name;
-    this.collection = init.collection;
+    this.collectionName = init.collectionName;
     this.populates = init.populates;
     this.collectionToModelName = init.collectionToModelName;
     this.getModelByName = init.getModelByName;
     this.autoCastIds = init.autoCastIds;
     this.castIdsConflictPolicy = init.castIdsConflictPolicy;
     this.db = { db: init.db };
+  }
+
+  // Resolve the Collection lazily from the Db on every access. Db and
+  // Collection handles are stateless references — Db.collection(name)
+  // does no I/O — so this is essentially free. Doing it dynamically
+  // means createGetModel can be called before the client is connected
+  // (call sites do `const Foo = getViperModel('Foo')` at module load
+  // time, well before connect()).
+  get collection(): Collection {
+    return this.db.db.collection(this.collectionName);
   }
 
   // ---- query entry verbs --------------------------------------------

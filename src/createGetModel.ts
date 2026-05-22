@@ -34,7 +34,7 @@ export const createGetModel = (opts: CreateGetModelOpts): GetModel => {
     const populates = opts.populates?.[name];
     const model = new Model({
       name,
-      collection: opts.db.collection(collection),
+      collectionName: collection,
       db: opts.db,
       populates: populates ?? {},
       collectionToModelName,

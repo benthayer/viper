@@ -1,6 +1,6 @@
 {
   "name": "mongoose-killer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "In a fight of Mongoose vs. Viper, only 1 in 10 Vipers come out on top. This is the 10th Viper. Viper is a drop-in Mongoose replacement built for speed.",
   "license": "MIT",
   "author": "Ben Thayer",
