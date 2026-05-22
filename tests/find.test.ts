@@ -181,4 +181,23 @@ describe(`Model.find chains (${BACKEND})`, () => {
     });
     expect(docs).toHaveLength(1);
   });
+
+  // Mongoose silently wraps a scalar passed to $in/$nin/$all in a
+  // one-element array. The native driver rejects with "$nin needs an
+  // array". We match Mongoose so existing call sites keep working.
+  it("$nin with a scalar value is coerced to a single-element array", async () => {
+    await Post.create({ ownerID: "u1", category: "blog" });
+    await Post.create({ ownerID: "u2", category: "news" });
+    const docs = await Post.find({ category: { $nin: "news" } });
+    expect(docs).toHaveLength(1);
+    expect(docs[0].ownerID).toBe("u1");
+  });
+
+  it("$in with a scalar value is coerced to a single-element array", async () => {
+    await Post.create({ ownerID: "u1", category: "blog" });
+    await Post.create({ ownerID: "u2", category: "news" });
+    const docs = await Post.find({ category: { $in: "blog" } });
+    expect(docs).toHaveLength(1);
+    expect(docs[0].ownerID).toBe("u1");
+  });
 });

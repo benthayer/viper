@@ -42,6 +42,18 @@ const STRING_OPERATORS = new Set<string>([
   "$diacriticSensitive",
 ]);
 
+// Operators whose values MUST be arrays at the wire level. Mongoose
+// silently wraps a scalar in a one-element array here; the native driver
+// rejects with "$in needs an array" etc. We mirror Mongoose so call
+// sites like `{ field: { $nin: 'X' } }` keep working.
+const ARRAY_OPERATORS = new Set<string>([
+  "$in",
+  "$nin",
+  "$all",
+]);
+
+const ensureArray = (v: any): any[] => (Array.isArray(v) ? v : [v]);
+
 const isHex24 = (v: unknown): v is string =>
   typeof v === "string" && HEX_24.test(v);
 
@@ -58,6 +70,10 @@ export const castFilter = (filter: any): any => {
   for (const [key, value] of Object.entries(filter)) {
     if (STRING_OPERATORS.has(key)) {
       out[key] = value;
+      continue;
+    }
+    if (ARRAY_OPERATORS.has(key)) {
+      out[key] = ensureArray(value).map(castValue);
       continue;
     }
     out[key] = castValue(value);
@@ -78,6 +94,10 @@ const castValue = (value: any): any => {
   for (const [k, v] of Object.entries(value)) {
     if (STRING_OPERATORS.has(k)) {
       out[k] = v;
+      continue;
+    }
+    if (ARRAY_OPERATORS.has(k)) {
+      out[k] = ensureArray(v).map(castValue);
       continue;
     }
     out[k] = castValue(v);
