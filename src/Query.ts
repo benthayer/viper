@@ -2,7 +2,11 @@ import type { Collection, ClientSession } from "mongodb";
 import { runPopulate, type PopulateSpec, normalizePopulateArg } from "./populate.js";
 import { castFilter } from "./castFilter.js";
 import { CastIdsConflictError } from "./CastIdsConflictError.js";
-import type { CastIdsConflictPolicy } from "./types.js";
+import { CastDatesConflictError } from "./CastDatesConflictError.js";
+import type {
+  CastIdsConflictPolicy,
+  CastDatesConflictPolicy,
+} from "./types.js";
 
 // One Query class covers every entry verb. The op tag tells exec()
 // what to do at terminus time. Mongoose's Query does the same thing
@@ -32,6 +36,8 @@ type ModelLike = {
   getModelByName: (name: string) => any;
   autoCastIds: boolean;
   castIdsConflictPolicy: CastIdsConflictPolicy;
+  autoCastDates: boolean;
+  castDatesConflictPolicy: CastDatesConflictPolicy;
 };
 
 type QueryInit = {
@@ -70,6 +76,9 @@ export class Query implements PromiseLike<any> {
   // Empty = neither was called; use model's autoCastIds default.
   // Both present at exec time = conflict, resolve per policy.
   private _castIdsOps: Array<"on" | "off"> = [];
+
+  // Same shape as _castIdsOps, for the date-string cast.
+  private _castDatesOps: Array<"on" | "off"> = [];
 
   // Options bag set by entry verb (e.g. { new, upsert, returnDocument }).
   // Stays mostly opaque — we forward what the driver understands.
@@ -150,6 +159,20 @@ export class Query implements PromiseLike<any> {
   // constructor's `autoCastIds` setting.
   skipCastIds(): this {
     this._castIdsOps.push("off");
+    return this;
+  }
+
+  // Force ISO/RFC 1123 → Date auto-cast ON for this query, regardless
+  // of the constructor's `autoCastDates` setting.
+  castDates(): this {
+    this._castDatesOps.push("on");
+    return this;
+  }
+
+  // Force ISO/RFC 1123 → Date auto-cast OFF for this query, regardless
+  // of the constructor's `autoCastDates` setting.
+  skipCastDates(): this {
+    this._castDatesOps.push("off");
     return this;
   }
 
@@ -267,17 +290,29 @@ export class Query implements PromiseLike<any> {
     }
   }
 
-  // Apply 24-hex-string → ObjectId coercion, IF the resolved
-  // per-query setting says we should. Done once per exec, at the
-  // boundary just before handing the filter to the driver.
+  // Apply structurally-unambiguous coercions to filter strings, IF the
+  // resolved per-query settings say we should. Done once per exec, at
+  // the boundary just before handing the filter to the driver.
   //
-  // The cast is on by default for Mongoose parity (Mongoose does the
-  // same silently from the schema). Opt out globally with
-  // `autoCastIds: false`, or per-query with `.skipCastIds()` when the
-  // filter value happens to look like a hex id but isn't.
+  // Both casts are on by default for Mongoose parity (Mongoose does
+  // the same silently from the schema). Opt out globally with
+  // `autoCastIds: false` / `autoCastDates: false`, or per-query with
+  // `.skipCastIds()` / `.skipCastDates()` when the filter value
+  // happens to look like one of the cast shapes but isn't.
   private castedFilter(): any {
     const filter = this.filter ?? {};
-    return this.resolveCastIds() ? castFilter(filter) : filter;
+    return castFilter(filter, this.resolveCastOptions());
+  }
+
+  // Resolve both per-query cast settings at once. Done together so
+  // each conflict policy throws in a deterministic order (ids first,
+  // then dates) and so we have a single CastOptions value to thread
+  // through castFilter and the aggregate $match path.
+  private resolveCastOptions(): { castIds: boolean; castDates: boolean } {
+    return {
+      castIds: this.resolveCastIds(),
+      castDates: this.resolveCastDates(),
+    };
   }
 
   // Resolve the per-query cast-id setting:
@@ -307,6 +342,31 @@ export class Query implements PromiseLike<any> {
         return ops[ops.length - 1] === "on";
       case "defaultWins":
         return this.model.autoCastIds;
+    }
+  }
+
+  // Mirrors resolveCastIds for the date-string cast.
+  private resolveCastDates(): boolean {
+    const ops = this._castDatesOps;
+    const hasOn = ops.includes("on");
+    const hasOff = ops.includes("off");
+
+    if (!hasOn && !hasOff) return this.model.autoCastDates;
+    if (hasOn && !hasOff) return true;
+    if (!hasOn && hasOff) return false;
+
+    switch (this.model.castDatesConflictPolicy) {
+      case "throw":
+        throw new CastDatesConflictError({
+          castDatesCallCount: ops.filter((o) => o === "on").length,
+          skipCastDatesCallCount: ops.filter((o) => o === "off").length,
+        });
+      case "firstWins":
+        return ops[0] === "on";
+      case "lastWins":
+        return ops[ops.length - 1] === "on";
+      case "defaultWins":
+        return this.model.autoCastDates;
     }
   }
 
@@ -441,14 +501,13 @@ export class Query implements PromiseLike<any> {
     if (this._hint) opts.hint = this._hint;
     if (this._comment) opts.comment = this._comment;
     if (this.opOptions.allowDiskUse) opts.allowDiskUse = this.opOptions.allowDiskUse;
-    // Cast hex strings in $match stages — but only if auto-cast is
-    // resolved-on for this query, same gating as the top-level
-    // filter. Other stages may contain expressions, but only $match
-    // is a true "filter" position.
-    const castOn = this.resolveCastIds();
+    // Cast hex/date strings in $match stages — same gating as the
+    // top-level filter. Other stages may contain expressions, but
+    // only $match is a true "filter" position.
+    const castOpts = this.resolveCastOptions();
     const pipeline = this.pipeline.map((stage) => {
-      if (castOn && stage && typeof stage === "object" && "$match" in stage) {
-        return { ...stage, $match: castFilter(stage.$match) };
+      if (stage && typeof stage === "object" && "$match" in stage) {
+        return { ...stage, $match: castFilter(stage.$match, castOpts) };
       }
       return stage;
     });

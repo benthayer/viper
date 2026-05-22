@@ -33,10 +33,12 @@ export type CreateGetModelOpts = {
   models: Record<string, string>;
   populates?: PopulateConfig;
   // fake-only — real-mongoose ignores these (mongoose's own
-  // schema-driven cast applies wherever a Schema.Types.ObjectId field
-  // is declared in the test harness's synthetic schemas).
+  // schema-driven cast applies wherever a Schema.Types.ObjectId / Date
+  // field is declared in the test harness's synthetic schemas).
   autoCastIds?: boolean;
   castIdsConflictPolicy?: "throw" | "firstWins" | "lastWins" | "defaultWins";
+  autoCastDates?: boolean;
+  castDatesConflictPolicy?: "throw" | "firstWins" | "lastWins" | "defaultWins";
 };
 
 let sharedConn: mongoose.Mongoose | null = null;

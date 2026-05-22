@@ -29,6 +29,8 @@ export type SetupArgs = {
   populates?: CreateGetModelOpts["populates"];
   autoCastIds?: CreateGetModelOpts["autoCastIds"];
   castIdsConflictPolicy?: CreateGetModelOpts["castIdsConflictPolicy"];
+  autoCastDates?: CreateGetModelOpts["autoCastDates"];
+  castDatesConflictPolicy?: CreateGetModelOpts["castDatesConflictPolicy"];
 };
 
 export type SetupResult = {
@@ -65,6 +67,8 @@ export const setupGetModel = async (args: SetupArgs): Promise<SetupResult> => {
     populates: args.populates,
     autoCastIds: args.autoCastIds,
     castIdsConflictPolicy: args.castIdsConflictPolicy,
+    autoCastDates: args.autoCastDates,
+    castDatesConflictPolicy: args.castDatesConflictPolicy,
   });
   return { getModel, teardown, backend: "fake", queryClient: args.client };
 };

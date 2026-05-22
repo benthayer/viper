@@ -14,6 +14,8 @@ export type FakeOpts = {
   populates?: CreateGetModelOpts["populates"];
   autoCastIds?: CreateGetModelOpts["autoCastIds"];
   castIdsConflictPolicy?: CreateGetModelOpts["castIdsConflictPolicy"];
+  autoCastDates?: CreateGetModelOpts["autoCastDates"];
+  castDatesConflictPolicy?: CreateGetModelOpts["castDatesConflictPolicy"];
 };
 
 export const createGetModelFakeAdapter = async (
@@ -25,6 +27,8 @@ export const createGetModelFakeAdapter = async (
     populates: opts.populates,
     autoCastIds: opts.autoCastIds,
     castIdsConflictPolicy: opts.castIdsConflictPolicy,
+    autoCastDates: opts.autoCastDates,
+    castDatesConflictPolicy: opts.castDatesConflictPolicy,
   });
   return { getModel, teardown: async () => {} };
 };

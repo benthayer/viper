@@ -31,6 +31,8 @@ export type CreateTestSetupExtras = {
   populates?: CreateGetModelOpts["populates"];
   autoCastIds?: CreateGetModelOpts["autoCastIds"];
   castIdsConflictPolicy?: CreateGetModelOpts["castIdsConflictPolicy"];
+  autoCastDates?: CreateGetModelOpts["autoCastDates"];
+  castDatesConflictPolicy?: CreateGetModelOpts["castDatesConflictPolicy"];
 };
 
 export const createTestSetup = async (
@@ -58,6 +60,8 @@ export const createTestSetup = async (
     populates: extras.populates,
     autoCastIds: extras.autoCastIds,
     castIdsConflictPolicy: extras.castIdsConflictPolicy,
+    autoCastDates: extras.autoCastDates,
+    castDatesConflictPolicy: extras.castDatesConflictPolicy,
   });
   const teardown = async () => {
     await teardownGetModel();
@@ -76,6 +80,8 @@ const isExtrasBag = (
   return (
     "autoCastIds" in v ||
     "castIdsConflictPolicy" in v ||
+    "autoCastDates" in v ||
+    "castDatesConflictPolicy" in v ||
     "populates" in v
   );
 };

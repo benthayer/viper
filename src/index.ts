@@ -6,9 +6,11 @@
 
 export { createGetModel } from "./createGetModel.js";
 export { CastIdsConflictError } from "./CastIdsConflictError.js";
+export { CastDatesConflictError } from "./CastDatesConflictError.js";
 export type {
   CreateGetModelOpts,
   GetModel,
   PopulateConfig,
   CastIdsConflictPolicy,
+  CastDatesConflictPolicy,
 } from "./types.js";

@@ -2,7 +2,10 @@ import type { Collection, Db, ObjectId as ObjectIdType } from "mongodb";
 import { ObjectId } from "bson";
 import { Query } from "./Query.js";
 import { runPopulate, normalizePopulateArg } from "./populate.js";
-import type { CastIdsConflictPolicy } from "./types.js";
+import type {
+  CastIdsConflictPolicy,
+  CastDatesConflictPolicy,
+} from "./types.js";
 
 type ModelInit = {
   name: string;
@@ -13,6 +16,8 @@ type ModelInit = {
   getModelByName: (name: string) => any;
   autoCastIds: boolean;
   castIdsConflictPolicy: CastIdsConflictPolicy;
+  autoCastDates: boolean;
+  castDatesConflictPolicy: CastDatesConflictPolicy;
 };
 
 // Mongoose `Model` is half class, half magic. We mimic the surface the
@@ -26,6 +31,8 @@ export class Model {
   getModelByName: (name: string) => any;
   autoCastIds: boolean;
   castIdsConflictPolicy: CastIdsConflictPolicy;
+  autoCastDates: boolean;
+  castDatesConflictPolicy: CastDatesConflictPolicy;
 
   // Mongoose exposes Model.db as a Connection-like object, and
   // Connection.db is the native Db handle. Some libraries reach
@@ -47,6 +54,8 @@ export class Model {
     this.getModelByName = init.getModelByName;
     this.autoCastIds = init.autoCastIds;
     this.castIdsConflictPolicy = init.castIdsConflictPolicy;
+    this.autoCastDates = init.autoCastDates;
+    this.castDatesConflictPolicy = init.castDatesConflictPolicy;
     this.db = { db: init.db };
   }
 
