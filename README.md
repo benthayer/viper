@@ -9,10 +9,10 @@ Under the hood, it uses the native MongoDB driver without any fluff for optimal 
 ## Quickstart
 
 ```bash
-npm install mongoose-killer mongodb
+npm install @4csoftware/mongoose-killer mongodb
 ```
 ```ts
-import { createGetModel } from "mongoose-killer";
+import { createGetModel } from "@4csoftware/mongoose-killer";
 import { MongoClient } from "mongodb";
 
 const client = new MongoClient(process.env.MONGO_URI!);
@@ -66,9 +66,9 @@ const posts = await Post.find({ published: true })
 ## Installing
 
 ```bash
-npm install mongoose-killer mongodb
+npm install @4csoftware/mongoose-killer mongodb
 # or
-yarn add mongoose-killer mongodb
+yarn add @4csoftware/mongoose-killer mongodb
 ```
 
 `mongodb` is a peer dependency — Viper doesn't bundle a driver, so the
