@@ -77,7 +77,7 @@ export class Model {
   }
 
   findById(id: any, projection?: any, options?: any): Query {
-    return this.findOne({ _id: coerceId(id) }, projection, options);
+    return this.findOne({ _id: extractId(id) }, projection, options);
   }
 
   findOneAndUpdate(filter: any, update: any, options?: any): Query {
@@ -91,7 +91,7 @@ export class Model {
   }
 
   findByIdAndUpdate(id: any, update: any, options?: any): Query {
-    return this.findOneAndUpdate({ _id: coerceId(id) }, update, options);
+    return this.findOneAndUpdate({ _id: extractId(id) }, update, options);
   }
 
   findOneAndDelete(filter: any, options?: any): Query {
@@ -104,7 +104,7 @@ export class Model {
   }
 
   findByIdAndDelete(id: any, options?: any): Query {
-    return this.findOneAndDelete({ _id: coerceId(id) }, options);
+    return this.findOneAndDelete({ _id: extractId(id) }, options);
   }
 
   updateOne(filter: any, update: any, options?: any): Query {
@@ -237,4 +237,14 @@ const coerceId = (id: any): any => {
     return new ObjectId(id);
   }
   return id;
+};
+
+// findById helpers accept a document-shaped object (matches mongoose).
+// We extract `_id` and then run it through the normal id coercion.
+const extractId = (input: any): any => {
+  if (input instanceof ObjectId) return input;
+  if (input != null && typeof input === "object" && "_id" in input) {
+    return coerceId(input._id);
+  }
+  return coerceId(input);
 };

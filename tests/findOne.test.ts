@@ -115,6 +115,28 @@ describe(`Model.findOne / findById chains (${BACKEND})`, () => {
     expect(doc).toBeNull();
   });
 
+  // Mongoose's findById accepts a document-shaped object and extracts _id.
+  // The core-api auth hot path relies on this: a cached tokenObject's
+  // populated `owner` field is a plain user doc, and lookupTokenWithOwner
+  // does `User.findById(tokenObject.owner)`. Viper must match.
+  it("findById(docWith_id) resolves via the doc's _id", async () => {
+    const oid = new ObjectId();
+    await User.create({ _id: oid, username: "alice" });
+    const docLike = { _id: oid, username: "alice", extra: "irrelevant" };
+    const doc = await User.findById(docLike).lean();
+    expect(doc?.username).toBe("alice");
+  });
+
+  it("findById(docWith_id-as-hex-string) resolves via the doc's _id", async () => {
+    const oid = new ObjectId();
+    await User.create({ _id: oid, username: "alice" });
+    // Mimics a tokenObject pulled from redis after JSON.parse: _id is a
+    // hex string, not an ObjectId.
+    const docLike = { _id: oid.toString(), username: "alice" };
+    const doc = await User.findById(docLike).lean();
+    expect(doc?.username).toBe("alice");
+  });
+
   it("non-lean doc exposes `.id` as the stringified _id", async () => {
     const oid = new ObjectId();
     await User.create({ _id: oid, username: "alice" });
