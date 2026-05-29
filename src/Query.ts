@@ -398,6 +398,7 @@ export class Query implements PromiseLike<any> {
       docs = await runPopulate(docs, this._populates, {
         ownerModel: this.model,
         session: this._session,
+        comment: this._comment,
       });
     }
     if (!this._lean) docs.forEach(addIdVirtual);
@@ -411,6 +412,7 @@ export class Query implements PromiseLike<any> {
       const [populated] = await runPopulate([doc], this._populates, {
         ownerModel: this.model,
         session: this._session,
+        comment: this._comment,
       });
       if (!this._lean) addIdVirtual(populated);
       return populated;
@@ -444,6 +446,7 @@ export class Query implements PromiseLike<any> {
       const [populated] = await runPopulate([doc], this._populates, {
         ownerModel: this.model,
         session: this._session,
+        comment: this._comment,
       });
       if (!this._lean) addIdVirtual(populated);
       return populated;

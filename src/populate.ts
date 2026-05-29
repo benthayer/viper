@@ -25,6 +25,7 @@ type ModelLike = {
 type RunOpts = {
   ownerModel: ModelLike;
   session: ClientSession | undefined;
+  comment?: string;
 };
 
 export const normalizePopulateArg = (arg: any): PopulateSpec[] => {
@@ -102,6 +103,8 @@ const populateScalarPath = async (
   const findOpts: any = {};
   if (spec.select) findOpts.projection = normalizeProjection(spec.select);
   if (opts.session) findOpts.session = opts.session;
+  const childComment = buildPopulateComment(opts.comment, spec.path);
+  if (childComment) findOpts.comment = childComment;
 
   const fetched = await refModel.collection.find(filter, findOpts).toArray();
 
@@ -109,6 +112,7 @@ const populateScalarPath = async (
     await runPopulate(fetched, spec.populate, {
       ownerModel: refModel,
       session: opts.session,
+      comment: childComment,
     });
   }
 
@@ -159,6 +163,8 @@ const populateArrayPath = async (
   const findOpts: any = {};
   if (spec.select) findOpts.projection = normalizeProjection(spec.select);
   if (opts.session) findOpts.session = opts.session;
+  const childComment = buildPopulateComment(opts.comment, spec.path);
+  if (childComment) findOpts.comment = childComment;
 
   const fetched = await refModel.collection.find(filter, findOpts).toArray();
 
@@ -166,6 +172,7 @@ const populateArrayPath = async (
     await runPopulate(fetched, spec.populate, {
       ownerModel: refModel,
       session: opts.session,
+      comment: childComment,
     });
   }
 
@@ -185,6 +192,19 @@ const populateArrayPath = async (
       else if (nullifyMisses) sub[child] = null;
     }
   }
+};
+
+// Propagate the parent query's comment to populate fan-out queries so
+// they remain attributable in profiler / log output. Mongoose itself
+// does not do this — we deliberately diverge to preserve route-level
+// observability. Annotate with `(populate <path>)` so it's obvious
+// which query is the parent and which is the populate.
+const buildPopulateComment = (
+  parentComment: string | undefined,
+  path: string,
+): string | undefined => {
+  if (!parentComment) return undefined;
+  return `${parentComment} (populate ${path})`;
 };
 
 const isPresent = (v: any): boolean => v !== null && v !== undefined;

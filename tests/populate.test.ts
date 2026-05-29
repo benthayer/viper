@@ -238,6 +238,54 @@ describe(`populate engine (${BACKEND})`, () => {
     expect(rec.total()).toBe(2);
   });
 
+  // viper-only: we deliberately propagate the parent .comment() into
+  // populate fan-out queries so they remain attributable in profiler
+  // output. Mongoose does not do this; we want the divergence.
+  (BACKEND === "fake" ? it : it.skip)(
+    "comment() propagates into single-level populate queries",
+    async () => {
+      const userIds = await seedUsers(User, 3);
+      for (const uid of userIds) {
+        await Post.create({ authorID: uid });
+      }
+      rec.reset();
+      await Post.find({})
+        .comment("getPostsWithAuthor")
+        .populate("authorID")
+        .lean();
+      const seen = rec.comments();
+      const posts = seen.find((s) => s.collection === "posts");
+      const users = seen.find((s) => s.collection === "users");
+      expect(posts?.comment).toBe("getPostsWithAuthor");
+      expect(users?.comment).toBe("getPostsWithAuthor (populate authorID)");
+    },
+  );
+
+  (BACKEND === "fake" ? it : it.skip)(
+    "comment() propagates into nested populate queries",
+    async () => {
+      const tagId = new ObjectId();
+      await Tag.create({ _id: tagId, name: "t-0" });
+      const articleId = new ObjectId();
+      await Article.create({ _id: articleId, tags: [{ _id: tagId }] });
+      await Comment.create({ articleID: articleId });
+      rec.reset();
+      await Comment.find({})
+        .comment("renderComments")
+        .populate({ path: "articleID", populate: { path: "tags._id" } })
+        .lean();
+      const seen = rec.comments();
+      const byColl = new Map(seen.map((s) => [s.collection, s.comment]));
+      expect(byColl.get("comments")).toBe("renderComments");
+      expect(byColl.get("articles")).toBe(
+        "renderComments (populate articleID)",
+      );
+      expect(byColl.get("tags")).toBe(
+        "renderComments (populate articleID) (populate tags._id)",
+      );
+    },
+  );
+
   it("populate where some parents have null ref — still 2 queries", async () => {
     const aliceId = (await User.create({ username: "user-alice" }))._id;
     await Post.create({ authorID: aliceId });
